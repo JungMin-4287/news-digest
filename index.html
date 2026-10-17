@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>산업 뉴스 모음집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 위는 18개 업종 방향 보드(타일), 아래는 고른 업종의 브리프 + 기사 흐름. 출처 지도는 별도 탭 */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --sunk: #eceff3; --ink: #17212c; --muted: #5a6674; --line: #d9dfe6;
+  --accent: #a8701a; --accent-soft: #f3e6cf;
+  --up: #c4302a; --up-soft: #f9e1df; --down: #2360b0; --down-soft: #dde8f7; --flat: #87919c;
+  --f-display: "Hahmlet", "Noto Serif KR", Georgia, serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1319; --surface: #151c24; --sunk: #1b232d; --ink: #e5eaf0; --muted: #94a0ad; --line: #27313c;
+  --accent: #e0a443; --accent-soft: #3a2e1a;
+  --up: #ff6d62; --up-soft: #3d1f1d; --down: #62a6ff; --down-soft: #1a2a40; --flat: #7d8894; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1319; --surface: #151c24; --sunk: #1b232d; --ink: #e5eaf0; --muted: #94a0ad; --line: #27313c;
+  --accent: #e0a443; --accent-soft: #3a2e1a;
+  --up: #ff6d62; --up-soft: #3d1f1d; --down: #62a6ff; --down-soft: #1a2a40; --flat: #7d8894; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 14px/1.6 var(--f-body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 60px; display: grid; gap: 20px }
+a { color: inherit }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; border-bottom: 2px solid var(--ink); padding-bottom: 12px }
+h1 { font: 700 clamp(24px, 3.4vw, 34px)/1.15 var(--f-display); margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.sub { color: var(--muted); font-size: 13px; margin-top: 4px }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+nav.tabs { display: flex; gap: 4px; flex-wrap: wrap }
+nav.tabs button { font: 600 13px var(--f-body); background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer }
+nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+h2 { font: 700 19px/1.3 var(--f-display); margin: 0; text-wrap: balance }
+.label { font-size: 11px; letter-spacing: 0.08em; color: var(--muted); font-weight: 600 }
+
+/* 방향 보드 */
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px 8px; display: grid; gap: 6px; cursor: pointer; text-align: left; font: inherit; color: inherit; min-width: 0; position: relative }
+.tile:hover { border-color: var(--muted) }
+.tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.tile .row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.tile .nm { font-weight: 600; font-size: 14px; line-height: 1.3 }
+.tile .one { font-size: 12.5px; color: var(--muted); line-height: 1.45; min-height: 2.9em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.tile .cnt { font-size: 11.5px; color: var(--muted) }
+.pill { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent }
+.pill.up { background: var(--up-soft); color: var(--up) }
+.pill.down { background: var(--down-soft); color: var(--down) }
+.pill.flat { background: var(--sunk); color: var(--muted) }
+.pill.mix { background: var(--accent-soft); color: var(--accent) }
+.pill.auto { background: transparent; border-color: currentColor }
+svg.spark { width: 100%; height: 30px; display: block }
+
+/* 본문 */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-width: 0 }
+.brief { display: grid; gap: 12px }
+.brief .head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline }
+.brief .one { font: 600 16px/1.45 var(--f-body) }
+.brief ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; max-width: 72ch }
+.brief .watch li::marker { color: var(--accent) }
+.hist { display: flex; gap: 6px; flex-wrap: wrap }
+.hist button { font: 12px var(--f-body); background: var(--sunk); border: 1px solid var(--line); color: var(--ink); border-radius: 4px; padding: 3px 8px; cursor: pointer; display: flex; gap: 6px; align-items: center }
+.hist button[aria-pressed="true"] { border-color: var(--accent) }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--flat) }
+.dot.up { background: var(--up) } .dot.down { background: var(--down) } .dot.mix { background: var(--accent) }
+.chart { overflow-x: auto }
+.chart svg { display: block; min-width: 520px; width: 100%; height: 150px }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.seg button { font: 12.5px var(--f-body); border: 0; background: var(--surface); color: var(--muted); padding: 5px 10px; cursor: pointer }
+.seg button + button { border-left: 1px solid var(--line) }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg) }
+input[type="search"] { font: 14px var(--f-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); width: min(280px, 100%) }
+label.chk { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; cursor: pointer }
+
+.list { display: grid }
+.item { display: grid; grid-template-columns: 74px 18px minmax(0, 1fr); gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line) }
+.item:first-child { border-top: 0 }
+.item .when { font-size: 12px; color: var(--muted); padding-top: 2px }
+.item .mk { font-size: 12px; padding-top: 3px; text-align: center }
+.mk.up { color: var(--up) } .mk.down { color: var(--down) } .mk.flat { color: var(--flat) }
+.item .tt { font-weight: 600; text-decoration: none; line-height: 1.45 }
+.item .tt:hover { text-decoration: underline }
+.item .im3 .tt, .item.im3 .tt { color: var(--ink) }
+.item .s { color: var(--ink); opacity: 0.86; font-size: 13.5px; margin-top: 2px; max-width: 80ch }
+.item .s.raw { color: var(--muted); opacity: 1; font-size: 13px }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); margin-top: 4px; align-items: center }
+.chip { font-size: 11.5px; padding: 0 6px; border-radius: 3px; background: var(--sunk); color: var(--muted); white-space: nowrap }
+.chip.ind { cursor: pointer; border: 0; font-family: var(--f-body) }
+.chip.relay { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+.chip.imp { background: var(--ink); color: var(--bg) }
+.more { margin-top: 12px; font: 600 13px var(--f-body); padding: 8px 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; cursor: pointer }
+.empty { color: var(--muted); padding: 24px 0 }
+
+/* 출처 지도 */
+.srcgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px }
+.srcgrid .panel h3 { font: 700 15px var(--f-display); margin: 0 0 8px }
+.bars { display: grid; gap: 3px }
+.bar { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr) 2.6em; gap: 8px; align-items: center; font-size: 12.5px }
+.bar span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.bar i { display: block; height: 8px; background: var(--accent); border-radius: 2px; opacity: 0.75 }
+.bar.relay i { background: var(--muted) }
+.bar b { font-weight: 500; text-align: right; color: var(--muted) }
+.tblwrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em }
+.note { font-size: 12.5px; color: var(--muted); max-width: 80ch }
+.note li + li { margin-top: 4px }
+.loading { color: var(--muted); padding: 40px 0 }
+
+/* 큰 흐름 */
+.market { display: grid; gap: 14px }
+.market .hl { font: 700 clamp(18px, 2.2vw, 22px)/1.4 var(--f-display); text-wrap: balance; margin: 0; max-width: 60ch }
+.threads { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 10px }
+.thread { border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 6px; align-content: start; background: var(--bg); min-width: 0 }
+.thread h3 { font: 600 14.5px/1.4 var(--f-body); margin: 0; display: flex; gap: 6px; align-items: baseline }
+.thread p { margin: 0; font-size: 13px; line-height: 1.55 }
+.thread .so { font-size: 12.5px; color: var(--accent); font-weight: 600 }
+.mrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px }
+.mrow ul { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 3px }
+.shift { display: flex; gap: 6px; align-items: center; font-size: 13px; flex-wrap: wrap }
+.trail { display: flex; gap: 3px; align-items: center }
+.trail i { width: 14px; height: 6px; border-radius: 1px; background: var(--flat); opacity: .55; display: block }
+.trail i.up { background: var(--up); opacity: .9 } .trail i.down { background: var(--down); opacity: .9 } .trail i.mix { background: var(--accent); opacity: .9 }
+.trail i:last-child { height: 9px }
+.stage { font-size: 11.5px; color: var(--accent); font-weight: 600; white-space: nowrap }
+
+/* 업종 인사이트 */
+.ins { display: grid; gap: 16px }
+.ins .hl { font: 700 clamp(18px, 2.2vw, 22px)/1.4 var(--f-display); margin: 0; text-wrap: balance; max-width: 60ch }
+.ins .flow { font-size: 14.5px; line-height: 1.75; max-width: 75ch; margin: 0 }
+.ins h3 { font: 600 12px var(--f-body); letter-spacing: 0.08em; color: var(--muted); margin: 0 0 6px }
+.thtbl td { font-size: 13px }
+.thtbl td.nm { font-weight: 600; white-space: nowrap }
+.thtbl tr.sel td { background: var(--accent-soft) }
+.thtbl tbody tr { cursor: pointer }
+.thtbl tbody tr:hover td { background: var(--sunk) }
+.wk { display: inline-flex; gap: 2px; align-items: flex-end; height: 22px; vertical-align: middle }
+.wk b { width: 9px; background: var(--muted); opacity: .5; border-radius: 1px; display: block }
+.wk b.now { background: var(--accent); opacity: 1 }
+.st { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 3px; white-space: nowrap }
+.st.new { background: var(--accent-soft); color: var(--accent) } .st.up { background: var(--up-soft); color: var(--up) } .st.down { background: var(--down-soft); color: var(--down) } .st.flat { background: var(--sunk); color: var(--muted) }
+.callout { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--sunk); border-radius: 0 6px 6px 0; font-size: 13.5px; line-height: 1.65; max-width: 80ch }
+.wl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px }
+.wl ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px }
+.wl li { font-size: 13px; line-height: 1.5 }
+.wl li b { font-weight: 600 }
+.wl .w b { color: var(--up) } .wl .l b { color: var(--down) }
+.watchtbl td:first-child { font-weight: 600 }
+.watchtbl .u { color: var(--up) } .watchtbl .d { color: var(--down) }
+.links { display: flex; flex-wrap: wrap; gap: 6px }
+.links button { font: 12.5px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; padding: 4px 8px; cursor: pointer; text-align: left }
+.links button span { color: var(--muted) }
+.inflect li { font-size: 13.5px }
+.inflect li span { color: var(--muted) }
+details.more-brief summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted) }
+@media (max-width: 560px) {
+  .item { grid-template-columns: 52px 14px minmax(0, 1fr); gap: 2px 8px }
+  .board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px }
+  .tile .one { display: none }
+}
+@media (prefers-reduced-motion: no-preference) { .tile { transition: border-color .15s } }
+</style>
+<style>[hidden]{display:none!important} body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>산업 뉴스 모음집</h1>
+      <div class="sub" id="sub">자료를 불러오는 중…</div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="보기">
+      <button role="tab" id="tab-desk" aria-selected="true">업종 방향·뉴스</button>
+      <button role="tab" id="tab-src" aria-selected="false">출처 지도</button>
+    </nav>
+  </header>
+
+  <section id="v-desk" class="cols">
+    <div class="panel market" id="market" hidden></div>
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <h2>업종 방향</h2>
+        <span class="note">오른쪽 위 = 이번 주 방향, 그 옆 네 칸 = 최근 4주 방향 궤적 · 막대 = 최근 30일 날마다 개선(위·빨강)·악화(아래·파랑) 기사 무게</span>
+      </div>
+      <div class="board" id="board"><div class="loading">불러오는 중…</div></div>
+    </div>
+    <div class="panel ins" id="insight" hidden></div>
+    <div class="panel brief" id="brief" hidden></div>
+    <div class="panel">
+      <div class="filters" style="margin-bottom:8px">
+        <h2 id="listTitle" style="margin-right:auto">주요 뉴스</h2>
+        <input type="search" id="q" placeholder="회사·품목·매체 찾기" aria-label="기사 찾기">
+      </div>
+      <div class="filters" style="margin-bottom:6px">
+        <div class="seg" id="segDays" role="group" aria-label="기간">
+          <button data-v="1">하루</button><button data-v="3">3일</button><button data-v="7">7일</button><button data-v="30">30일</button>
+        </div>
+        <div class="seg" id="segKind" role="group" aria-label="종류">
+          <button data-v="all">전체</button><button data-v="뉴스">뉴스</button><button data-v="공시">공시</button><button data-v="리포트">리포트</button><button data-v="X">X</button>
+        </div>
+        <div class="seg" id="segDir" role="group" aria-label="방향">
+          <button data-v="all">전체</button><button data-v="1">개선</button><button data-v="-1">악화</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="onlyAi"> 요약된 기사만</label>
+        <label class="chk"><input type="checkbox" id="onlyRelay"> 2곳 이상 옮긴 것</label>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <section id="v-src" hidden>
+    <div class="panel" style="margin-bottom:16px">
+      <h2 style="margin-bottom:6px">어디서 뉴스를 가져오나</h2>
+      <p class="note" style="margin:0 0 8px">TOTBOX·루팡과 그동안 받아 온 채널 글 약 1만 건의 링크·인용·전달 출처를 세어 업종마다 원 출처를 정했습니다. 원 출처는 텔레그램 채널을 거치지 않고 직접도 받습니다(구글 뉴스 사이트 지정 검색, 매체 RSS, 华尔街见闻 속보, 채널들이 자주 전달하는 원 채널).</p>
+      <ul class="note" id="blocked" style="margin:0;padding-left:18px"></ul>
+    </div>
+    <h2 style="margin:4px 0 10px">업종별 원 출처 (최근 30일 기사 수)</h2>
+    <div class="srcgrid" id="srcgrid"></div>
+    <h2 style="margin:22px 0 10px">채널이 인용하는 원 출처</h2>
+    <div class="panel tblwrap"><table id="chtbl"></table></div>
+    <h2 style="margin:22px 0 10px">채널이 옮긴 X 계정</h2>
+    <div class="panel"><div class="bars" id="xbars"></div></div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('nd.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('nd.' + k, JSON.stringify(v)); } catch {} } };
+let META, NEWS = [], BRIEFS = {}, IND = {}, INS = { ind: {}, market: [], live: {} };
+const STV = { '새로': 'new', '강해짐': 'up', '지속': 'flat', '약해짐': 'down', '사라짐': 'down' };
+const ins = id => (INS.ind[id] || [])[0] || null;
+function renderMarket() {
+  const m = INS.market[0], el = $('#market');
+  if (!m) { el.hidden = true; return; }
+  el.hidden = false;
+  const chip = id => IND[id] ? `<button class="chip ind" data-ind="${id}">${esc(IND[id].name)}</button>` : '';
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline"><span class="label">이번 주 큰 흐름 · <span class="mono">${esc(m.end)}</span></span></div>
+    <p class="hl">${esc(m.headline)}</p>
+    <div class="threads">${(m.threads || []).map(t => `<div class="thread">
+      <h3><span class="mk ${t.dir > 0 ? 'up' : t.dir < 0 ? 'down' : 'flat'}">${t.dir > 0 ? '▲' : t.dir < 0 ? '▼' : '–'}</span>${esc(t.name)}</h3>
+      <div class="meta" style="margin:0">${(t.inds || []).map(chip).join('')}</div>
+      <p>${esc(t.story)}</p>${t.so ? `<div class="so">${esc(t.so)}</div>` : ''}</div>`).join('')}</div>
+    <div class="mrow">
+      ${(m.shifts || []).length ? `<div><h3 class="label" style="margin:0 0 6px">방향이 바뀐 업종</h3><div style="display:grid;gap:6px">${m.shifts.map(s => `<div class="shift">${chip(s.ind)} <span class="pill ${VIEW[s.from] || 'flat'}">${esc(s.from)}</span>→<span class="pill ${VIEW[s.to] || 'flat'}">${esc(s.to)}</span> <span class="note">${esc(s.why)}</span></div>`).join('')}</div></div>` : ''}
+      ${(m.risks || []).length ? `<div><h3 class="label" style="margin:0 0 6px">업종 전반의 위험</h3><ul>${m.risks.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>` : ''}
+      ${(m.watch || []).length ? `<div><h3 class="label" style="margin:0 0 6px">이번 주 확인할 일정</h3><ul>${m.watch.map(w => `<li>${esc(w.what)}${w.when ? ` <span class="mono" style="color:var(--muted)">${esc(w.when)}</span>` : ''}</li>`).join('')}</ul></div>` : ''}
+    </div>`;
+  el.querySelectorAll('.chip.ind').forEach(b => b.onclick = () => selectInd(b.dataset.ind));
+}
+function renderInsight() {
+  const el = $('#insight'), I = st.ind ? ins(st.ind) : null;
+  if (!I) { el.hidden = true; return; }
+  el.hidden = false;
+  const live = INS.live[st.ind] || { themes: {}, fresh: [] };
+  const byId = id => NEWS.find(n => n.i === id);
+  const refLinks = ids => (ids || []).map(byId).filter(Boolean).slice(0, 3).map(n => `<a href="${esc(n.u)}" target="_blank" rel="noopener" title="${esc(n.t)}">${esc(n.src)}</a>`).join(' · ');
+  const tk = a => (a || []).map(t => `<span class="chip">${esc(t)}</span>`).join(' ');
+  const hist = (INS.ind[st.ind] || []).slice(1, 6);
+  el.innerHTML = `
+    <div class="head" style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline">
+      <h2>${esc(IND[st.ind].name)} 인사이트</h2><span class="pill mix">${esc(I.stage)}</span>
+      <span class="label mono">${esc(I.end)} · 확신 ${esc(I.conf || '-')}</span>
+      <button class="seg" style="margin-left:auto;padding:4px 10px;font:12.5px var(--f-body);background:var(--surface);color:var(--muted);cursor:pointer" id="closeInd2">전체 업종 보기</button></div>
+    <p class="hl">${esc(I.headline)}</p>
+    <p class="flow">${esc(I.flow)}</p>
+    <div class="note"><b>국면 판단</b> · ${esc(I.stageWhy || '')}${I.confWhy ? ` · <b>확신</b> ${esc(I.confWhy)}` : ''}</div>
+    <div><h3>테마 흐름 — 4주 기사 수, 줄을 누르면 아래 목록이 그 테마로 걸러짐</h3>
+      <div class="tblwrap"><table class="thtbl"><thead><tr><th>테마</th><th>상태</th><th>4주</th><th>이후</th><th>방향</th><th>뜻</th><th>관련</th></tr></thead><tbody>
+      ${(I.themes || []).map(t => { const wk = t.wk || [], mx = Math.max(1, ...wk), lv = live.themes[t.name];
+        return `<tr data-th="${esc(t.name)}" class="${st.th === t.name ? 'sel' : ''}"><td class="nm">${esc(t.name)}</td><td><span class="st ${STV[t.status] || 'flat'}">${esc(t.status)}</span></td>
+        <td><span class="wk">${wk.map((v, i) => `<b class="${i === wk.length - 1 ? 'now' : ''}" style="height:${Math.max(2, v / mx * 22)}px" title="${v}건"></b>`).join('')}</span></td>
+        <td class="mono" title="인사이트 뒤 새로 붙은 기사">${lv ? `+${lv.n}` : '–'}</td>
+        <td class="mk ${t.dir > 0 ? 'up' : t.dir < 0 ? 'down' : 'flat'}">${t.dir > 0 ? '▲' : t.dir < 0 ? '▼' : '–'}</td>
+        <td style="min-width:220px">${esc(t.why)}</td><td>${tk(t.tk)}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      ${live.fresh.length ? `<div class="note" style="margin-top:6px"><b>새로 보이는 흐름</b> · ${live.fresh.map(f => `${esc(f.name)} ${f.n}건`).join(' · ')}</div>` : ''}
+    </div>
+    ${(I.inflection || []).length ? `<div><h3>변곡·이상 신호</h3><ul class="inflect" style="margin:0;padding-left:18px;display:grid;gap:4px">${I.inflection.map(f => `<li>${esc(f.signal)} <span>→ ${esc(f.meaning)}</span> ${refLinks(f.refs)}</li>`).join('')}</ul></div>` : ''}
+    ${I.gap ? `<div><h3>뉴스 흐름 vs 숫자</h3><div class="callout">${esc(I.gap)}</div></div>` : ''}
+    <div><h3>투자에 주는 함의</h3>
+      <div class="wl">
+        <ul class="w">${(I.implications?.winners || []).map(w => `<li><b>▲ ${esc(w.who)}</b> — ${esc(w.why)} ${tk(w.tk)}</li>`).join('')}</ul>
+        <ul class="l">${(I.implications?.losers || []).map(w => `<li><b>▼ ${esc(w.who)}</b> — ${esc(w.why)} ${tk(w.tk)}</li>`).join('')}</ul>
+      </div>
+      ${I.implications?.view ? `<div class="callout" style="margin-top:10px">${esc(I.implications.view)}</div>` : ''}
+    </div>
+    ${(I.watch || []).length ? `<div><h3>확인할 신호</h3><div class="tblwrap"><table class="watchtbl"><thead><tr><th>무엇</th><th>언제</th><th>이렇게 나오면</th><th>저렇게 나오면</th></tr></thead><tbody>
+      ${I.watch.map(w => `<tr><td>${esc(w.what)}</td><td class="mono">${esc(w.when || '')}</td><td class="u">${esc(w.up || '')}</td><td class="d">${esc(w.down || '')}</td></tr>`).join('')}</tbody></table></div></div>` : ''}
+    ${(I.links || []).length ? `<div><h3>다른 업종으로 번지는 고리</h3><div class="links">${I.links.map(l => IND[l.ind] ? `<button data-ind="${l.ind}">${esc(IND[l.ind].name)} <span>· ${esc(l.how)}</span></button>` : '').join('')}</div></div>` : ''}
+    ${hist.length ? `<details class="more-brief"><summary>지난 인사이트 한 줄 (${hist.length})</summary><ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${hist.map(h => `<li><span class="mono">${esc(h.end)}</span> ${esc(h.stage)} — ${esc(h.headline)}</li>`).join('')}</ul></details>` : ''}`;
+  $('#closeInd2').onclick = () => selectInd(null);
+  el.querySelectorAll('.links button').forEach(b => b.onclick = () => selectInd(b.dataset.ind));
+  el.querySelectorAll('.thtbl tbody tr').forEach(r => r.onclick = () => { st.th = st.th === r.dataset.th ? null : r.dataset.th; st.shown = 120; if (st.th && st.days < 30) { st.days = 30; segs(); } renderInsight(); renderList(); $('#listTitle').scrollIntoView({ block: 'start' }); });
+}
+const st = { th: null, ind: null, days: store.get('days', 3), kind: store.get('kind', 'all'), dir: 'all', q: '', onlyAi: store.get('onlyAi', false), onlyRelay: false, shown: 120, wk: null };
+const VIEW = { '개선': 'up', '악화': 'down', '유지': 'flat', '혼조': 'mix' };
+
+function autoView(id) {
+  const s = META.ser[id].slice(-7); let p = 0, n = 0, c = 0; for (const [a, b, k] of s) { p += a; n += b; c += k; }
+  const net = (p - n) / Math.max(1, p + n);
+  return { view: c < 5 ? '유지' : net > 0.2 ? '개선' : net < -0.2 ? '악화' : (p + n > 8 && Math.abs(net) < 0.2 ? '혼조' : '유지'), p, n, c };
+}
+function spark(id) {
+  const s = META.ser[id], W = 200, H = 30, mid = H / 2, bw = W / s.length;
+  const mx = Math.max(1, ...s.map(x => Math.max(x[0], x[1])));
+  let r = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${W}" y1="${mid}" y2="${mid}" stroke="var(--line)" stroke-width="1"/>`;
+  s.forEach((x, i) => {
+    const hu = (x[0] / mx) * (mid - 1), hd = (x[1] / mx) * (mid - 1);
+    if (hu > 0.3) r += `<rect x="${i * bw + 0.6}" y="${mid - hu}" width="${bw - 1.2}" height="${hu}" fill="var(--up)"/>`;
+    if (hd > 0.3) r += `<rect x="${i * bw + 0.6}" y="${mid}" width="${bw - 1.2}" height="${hd}" fill="var(--down)"/>`;
+  });
+  return r + '</svg>';
+}
+function renderBoard() {
+  $('#board').innerHTML = META.industries.map(ind => {
+    const b = (BRIEFS[ind.id] || [])[0], a = autoView(ind.id), I = ins(ind.id);
+    const view = b ? b.view : a.view, cls = VIEW[view] + (b ? '' : ' auto');
+    const trail = (BRIEFS[ind.id] || []).slice(0, 4).reverse();
+    return `<button class="tile" data-ind="${ind.id}" aria-pressed="${st.ind === ind.id}">
+      <div class="row1"><span class="nm">${esc(ind.name)}</span><span class="pill ${cls}" title="${b ? esc(b.wk) + ' Claude 브리프' : '최근 7일 기사 방향으로 낸 자동 판정'}">${view}</span></div>
+      <div class="row1"><span class="stage">${esc(I?.stage || '')}</span><span class="trail" title="${trail.map(t => t.wk + ' ' + t.view).join(' → ')}">${trail.map(t => `<i class="${VIEW[t.view]}"></i>`).join('')}</span></div>
+      <div class="one">${esc(I ? I.headline : b ? b.one : ind.hint)}</div>
+      ${spark(ind.id)}
+      <div class="cnt mono">7일 기사 ${a.c} · 개선 ${Math.round(a.p)} · 악화 ${Math.round(a.n)}</div>
+    </button>`;
+  }).join('');
+}
+function chart(id) {
+  const s = META.ser[id], days = META.days, W = 720, H = 150, padL = 30, padB = 20, top = 8, mid = top + (H - top - padB) / 2;
+  const mx = Math.max(1, ...s.map(x => Math.max(x[0], x[1]))), half = mid - top, bw = (W - padL - 6) / s.length;
+  const nice = Math.ceil(mx);
+  let r = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="최근 30일 개선·악화 기사 무게">`;
+  r += `<line x1="${padL}" x2="${W}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>`;
+  r += `<text x="${padL - 6}" y="${top + 8}" font-size="10" text-anchor="end" fill="var(--muted)" font-family="IBM Plex Mono, monospace">+${nice}</text>`;
+  r += `<text x="${padL - 6}" y="${mid + half}" font-size="10" text-anchor="end" fill="var(--muted)" font-family="IBM Plex Mono, monospace">−${nice}</text>`;
+  r += `<text x="${padL - 6}" y="${mid + 3}" font-size="10" text-anchor="end" fill="var(--muted)" font-family="IBM Plex Mono, monospace">0</text>`;
+  s.forEach((x, i) => {
+    const X = padL + i * bw, hu = x[0] / nice * half, hd = x[1] / nice * half;
+    if (hu > 0) r += `<rect x="${X + 1}" y="${mid - hu}" width="${bw - 2}" height="${hu}" fill="var(--up)" opacity=".85"><title>${days[i]} 개선 ${x[0]} · 악화 ${x[1]} · 기사 ${x[2]}</title></rect>`;
+    if (hd > 0) r += `<rect x="${X + 1}" y="${mid}" width="${bw - 2}" height="${hd}" fill="var(--down)" opacity=".85"><title>${days[i]} 개선 ${x[0]} · 악화 ${x[1]} · 기사 ${x[2]}</title></rect>`;
+    if (i % 5 === 0 || i === s.length - 1) r += `<text x="${X + bw / 2}" y="${H - 5}" font-size="10" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${days[i].slice(5).replace('-', '/')}</text>`;
+  });
+  return r + '</svg>';
+}
+function renderBrief() {
+  const el = $('#brief');
+  if (!st.ind) { el.hidden = true; return; }
+  el.hidden = false;
+  const ind = IND[st.ind], list = BRIEFS[st.ind] || [], b = list.find(x => x.end === st.wk) || list[0], a = autoView(st.ind);
+  const refs = b ? b.refs.map(id => NEWS.find(n => n.i === id)).filter(Boolean) : [];
+  el.innerHTML = `
+    <div class="head"><h2>${esc(ind.name)}</h2>
+      ${b ? `<span class="pill ${VIEW[b.view]}">${b.view}</span><span class="label mono">${esc(b.wk)} 브리프</span>` : `<span class="pill ${VIEW[a.view]} auto">${a.view}</span><span class="label">자동 판정 · Claude 브리프 아직 없음</span>`}
+      <button class="seg" style="margin-left:auto;padding:4px 10px;font:12.5px var(--f-body);background:var(--surface);color:var(--muted);cursor:pointer" id="closeInd">전체 업종 보기</button></div>
+    ${b ? `<div class="one">${esc(b.one)}</div>
+    <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))">
+      <div><div class="label" style="margin-bottom:4px">무엇이 바뀌었나</div><ul>${b.pts.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>
+      <div><div class="label" style="margin-bottom:4px">다음에 확인할 신호</div><ul class="watch">${b.watch.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+      ${refs.length ? `<div class="label" style="margin:10px 0 4px">근거 기사</div><ul>${refs.map(n => `<li><a href="${esc(n.u)}" target="_blank" rel="noopener">${esc(n.t)}</a> <span class="chip">${esc(n.src)}</span></li>`).join('')}</ul>` : ''}</div>
+    </div>` : `<div class="note">${esc(ind.hint)}</div>`}
+    ${list.length > 1 ? `<div><div class="label" style="margin-bottom:4px">주간 방향 기록</div><div class="hist">${list.slice().reverse().map(x => `<button data-wk="${x.end}" aria-pressed="${x === b}"><span class="dot ${VIEW[x.view]}"></span>${esc(x.wk)} ${x.view}</button>`).join('')}</div></div>` : ''}
+    <div><div class="label" style="margin-bottom:2px">최근 30일 개선·악화 기사 무게 (중요도·옮긴 곳 수 가중)</div><div class="chart">${chart(st.ind)}</div></div>`;
+  $('#closeInd').onclick = () => selectInd(null);
+  el.querySelectorAll('.hist button').forEach(bt => bt.onclick = () => { st.wk = bt.dataset.wk; renderBrief(); });
+}
+function dirFor(n) {
+  if (n.dir) { if (st.ind) return n.dir[st.ind] ?? 0; const v = Object.values(n.dir); return v.some(x => x > 0) && !v.some(x => x < 0) ? 1 : v.some(x => x < 0) && !v.some(x => x > 0) ? -1 : 0; }
+  return n.rd || 0;
+}
+function filtered() {
+  const cut = Date.now() + 9 * 3600e3 - st.days * 864e5, cutS = new Date(cut).toISOString().slice(0, 16);
+  const q = st.q.trim().toLowerCase();
+  const thRefs = st.th && st.ind ? new Set((ins(st.ind)?.themes || []).find(t => t.name === st.th)?.refs || []) : null;
+  return NEWS.filter(n => n.d >= cutS && (!st.ind || n.ind.includes(st.ind)) && (!thRefs || thRefs.has(n.i) || n.th?.[st.ind] === st.th) && (st.kind === 'all' || (st.kind === 'X' ? n.src.startsWith('X @') : n.k === st.kind)) && (!st.onlyAi || n.dir) && (!st.onlyRelay || n.v.length >= 2)
+    && (st.dir === 'all' || dirFor(n) === +st.dir)
+    && (!q || (n.t + ' ' + (n.s || '') + ' ' + n.src + ' ' + (n.tk || []).join(' ')).toLowerCase().includes(q)));
+}
+function score(n) { return (n.im || (n.dir ? 1 : 0.6)) * 3 + Math.log2(n.v.length + 1) * 2 + (n.dir ? 1 : 0); }
+function renderList() {
+  let xs = filtered();
+  // 하루·3일은 중요한 것 먼저, 7·30일은 중요도 순 상위
+  xs.sort((a, b) => score(b) - score(a) || b.d.localeCompare(a.d));
+  const ind = st.ind ? IND[st.ind].name : '전체 업종';
+  $('#listTitle').textContent = `${ind}${st.th ? ' · ' + st.th : ''} 뉴스 ${xs.length.toLocaleString()}건`;
+  if (!xs.length) { $('#list').innerHTML = `<div class="empty">조건에 맞는 기사가 없습니다. 기간을 늘리거나 필터를 풀어 보세요.</div>`; return; }
+  const show = xs.slice(0, st.shown);
+  $('#list').innerHTML = show.map(n => {
+    const d = dirFor(n), mk = d > 0 ? ['up', '▲'] : d < 0 ? ['down', '▼'] : ['flat', '–'];
+    const via = n.v.map(i => META.via[i]);
+    return `<article class="item">
+      <div class="when mono">${n.d.slice(5, 10).replace('-', '/')}<br>${n.d.slice(11, 16)}</div>
+      <div class="mk ${mk[0]}" title="${n.dir ? 'Claude 판독' : '키워드 자동 판정'}: ${d > 0 ? '업황에 좋음' : d < 0 ? '업황에 나쁨' : '중립·사실 전달'}">${mk[1]}</div>
+      <div style="min-width:0">
+        <a class="tt" href="${esc(n.u)}" target="_blank" rel="noopener">${esc(n.t)}</a>
+        <div class="s${n.dir ? '' : ' raw'}">${esc(n.s || '')}</div>
+        <div class="meta">
+          ${n.im === 3 ? '<span class="chip imp">중요</span>' : ''}
+          <span>${esc(n.src)}</span>
+          ${via.length >= 2 ? `<span class="chip relay" title="${esc(via.join(', '))}">${via.length}곳이 옮김</span>` : via[0] && via[0] !== n.src ? `<span title="옮긴 곳">via ${esc(via[0])}</span>` : ''}
+          ${st.ind && n.th?.[st.ind] ? `<span class="chip" style="color:var(--accent)">${esc(n.th[st.ind].replace(/^\+/, '새 흐름: '))}</span>` : ''}
+          ${n.k !== '뉴스' ? `<span class="chip">${esc(n.k)}</span>` : ''}${n.c ? `<span class="chip">${esc(n.c)}</span>` : ''}
+          ${(n.tk || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}
+          ${!st.ind ? n.ind.map(i => IND[i] ? `<button class="chip ind" data-ind="${i}">${esc(IND[i].name)}</button>` : '').join('') : ''}
+          ${n.x ? n.x.map(h => `<a href="https://x.com/${esc(h)}" target="_blank" rel="noopener">X @${esc(h)}</a>`).join('') : ''}
+          ${n.tg ? `<a href="${esc(n.tg)}" target="_blank" rel="noopener">텔레그램 글</a>` : ''}
+          ${n.p ? '<span title="초대받은 비공개 방 자료">비공개 방</span>' : ''}
+        </div>
+      </div></article>`;
+  }).join('') + (xs.length > st.shown ? `<div><button class="more" id="more">더 보기 (${(xs.length - st.shown).toLocaleString()}건 남음)</button></div>` : '');
+  const m = $('#more'); if (m) m.onclick = () => { st.shown += 150; renderList(); };
+  $('#list').querySelectorAll('.chip.ind').forEach(b => b.onclick = () => selectInd(b.dataset.ind));
+}
+function selectInd(id) {
+  st.ind = id; st.wk = null; st.th = null; st.shown = 120;
+  try { history.replaceState(null, '', id ? '#' + id : location.pathname + location.search); } catch {}
+  renderBoard(); renderInsight(); renderBrief(); renderList();
+  if (id) $(ins(id) ? '#insight' : '#brief').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+function segs() {
+  for (const [sel, key] of [['#segDays', 'days'], ['#segKind', 'kind'], ['#segDir', 'dir']]) {
+    const g = $(sel);
+    g.querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.v) === String(st[key])); b.onclick = () => { st[key] = key === 'days' ? +b.dataset.v : b.dataset.v; store.set(key, st[key]); st.shown = 120; segs(); renderList(); }; });
+  }
+}
+function renderSources() {
+  $('#blocked').innerHTML = META.blocked.map(b => `<li>${esc(b)}</li>`).join('');
+  $('#srcgrid').innerHTML = META.industries.map(ind => {
+    const m = META.srcMap[ind.id], mx = Math.max(1, ...(m.outlets.map(x => x[1])), ...(m.relays.map(x => x[1])));
+    const bars = (arr, cls) => arr.map(([k, v]) => `<div class="bar ${cls}"><span title="${esc(k)}">${esc(k)}</span><i style="width:${(v / mx * 100).toFixed(1)}%"></i><b class="mono">${v}</b></div>`).join('');
+    return `<div class="panel"><h3>${esc(ind.name)} <span class="label mono">${m.n}건</span></h3>
+      <div class="label" style="margin-bottom:3px">원 매체</div><div class="bars">${bars(m.outlets.slice(0, 8), '')}</div>
+      <div class="label" style="margin:10px 0 3px">옮긴 채널</div><div class="bars">${bars(m.relays.slice(0, 6), 'relay')}</div>
+      ${m.x.length ? `<div class="label" style="margin:10px 0 3px">X 계정</div><div class="note">${m.x.map(([h, v]) => `@${esc(h)} ${v}`).join(' · ')}</div>` : ''}</div>`;
+  }).join('');
+  $('#chtbl').innerHTML = `<thead><tr><th>채널</th><th class="mono">글</th><th>많이 인용한 원 출처(링크 수)</th></tr></thead><tbody>` +
+    META.channels.filter(c => c.top.length).map(c => `<tr><td>${esc(c.label)}</td><td class="mono">${c.n}</td><td>${c.top.map(([d, n]) => `${esc(d)} <span class="mono" style="color:var(--muted)">${n}</span>`).join(' · ')}</td></tr>`).join('') + '</tbody>';
+  const mx = Math.max(1, ...META.xTop.map(x => x[1]));
+  $('#xbars').innerHTML = META.xTop.map(([h, n, ch]) => `<div class="bar"><span><a href="https://x.com/${esc(h)}" target="_blank" rel="noopener">@${esc(h)}</a></span><i style="width:${(n / mx * 100).toFixed(1)}%"></i><b class="mono" title="${esc(ch.join(', '))}">${n}</b></div>`).join('');
+}
+function tab(which) {
+  $('#tab-desk').setAttribute('aria-selected', which === 'desk'); $('#tab-src').setAttribute('aria-selected', which === 'src');
+  $('#v-desk').hidden = which !== 'desk'; $('#v-src').hidden = which !== 'src';
+  if (which === 'src') { try { history.replaceState(null, '', '#sources'); } catch {} }
+  else if (location.hash === '#sources') { try { history.replaceState(null, '', location.pathname + location.search); } catch {} }
+}
+async function boot() {
+  try {
+    const [m, n, b] = await Promise.all(['data/meta.json', 'data/news.json', 'data/briefs.json'].map(f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); })));
+    META = m; NEWS = n; BRIEFS = b || {}; for (const i of META.industries) IND[i.id] = i;
+  } catch (e) { $('#sub').textContent = '자료를 읽지 못했습니다: ' + e.message; return; }
+  try { const r = await fetch('data/insights.json'); if (r.ok) INS = await r.json(); } catch {}
+  const at = new Date(META.at);
+  $('#sub').innerHTML = `<span class="mono">${at.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span> 갱신 · 최근 30일 기사 <span class="mono">${META.counts.items.toLocaleString()}</span>건 (Claude 요약 <span class="mono">${META.counts.ai.toLocaleString()}</span>) · 텔레그램 ${META.channels.length}곳 + 매체 RSS·구글 뉴스·华尔街见闻·X${META.public ? ' · 공개판(초대 방 자료·외국계 리서치 요약 제외)' : ''}`;
+  $('#q').oninput = e => { st.q = e.target.value; st.shown = 120; renderList(); };
+  $('#onlyAi').checked = st.onlyAi; $('#onlyAi').onchange = e => { st.onlyAi = e.target.checked; store.set('onlyAi', st.onlyAi); renderList(); };
+  $('#onlyRelay').onchange = e => { st.onlyRelay = e.target.checked; renderList(); };
+  $('#board').onclick = e => { const t = e.target.closest('.tile'); if (t) selectInd(st.ind === t.dataset.ind ? null : t.dataset.ind); };
+  $('#tab-desk').onclick = () => tab('desk'); $('#tab-src').onclick = () => tab('src');
+  segs(); renderSources(); renderMarket();
+  const h = location.hash.slice(1);
+  if (h === 'sources') { tab('src'); renderBoard(); renderList(); }
+  else if (IND[h]) { st.ind = h; renderBoard(); renderInsight(); renderBrief(); renderList(); }
+  else { renderBoard(); renderList(); }
+}
+boot();
+</script>
+</body>
+</html>
